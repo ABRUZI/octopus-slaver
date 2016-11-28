@@ -9,8 +9,12 @@ import org.rhino.octopus.base.configuration.Property;
 import org.rhino.octopus.base.constants.RegistConstants;
 import org.rhino.octopus.base.exception.OctopusException;
 import org.rhino.octopus.slaver.context.SlaverContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SlaverRegister {
+	
+	private static final Logger logger = LoggerFactory.getLogger(SlaverRegister.class);
 	
 	private static SlaverRegister instance = new SlaverRegister();
 	
@@ -24,6 +28,7 @@ public class SlaverRegister {
 	
 	public void open()throws OctopusException{
 		try {
+			logger.debug("注册当前节点到Zookeeper");
 			OctopusConfiguration configuration = SlaverContext.getInstance().getConfiguration();
 			Property zookeeperProp = configuration.getProperty(OctopusConfiguration.ConfigurationItem.ZOO_KEEPER);
 			this.zk = new ZooKeeper(zookeeperProp.getValue(), 3000, null);
@@ -39,8 +44,9 @@ public class SlaverRegister {
 			this.createNodeIfNotExists(RegistConstants.SLAVERS_REGIST_NODE, CreateMode.PERSISTENT);
 			String curNodeName = RegistConstants.getSlaveNode();
 			this.createNodeIfNotExists(curNodeName, CreateMode.EPHEMERAL);
-			
+			logger.debug("当前节点在Zookeeper注册完毕");
 		} catch (Exception e) {
+			logger.error("regist current node to zookeeper failed", e);
 			throw new OctopusException(e);
 		}
 	}

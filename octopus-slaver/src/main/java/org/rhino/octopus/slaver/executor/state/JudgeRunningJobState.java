@@ -21,7 +21,6 @@ public class JudgeRunningJobState implements IState {
 	@Override
 	public void execute() throws OctopusException{
 		List<JobExecutor> executingList = this.controller.getContext().getExecutingList();
-		
 		List<JobExecutor> finishList = new ArrayList<JobExecutor>();
 		for(int i = executingList.size() - 1; i >= 0; i--){
 			JobExecutor jobExecutor = executingList.get(i);
@@ -32,7 +31,6 @@ public class JudgeRunningJobState implements IState {
 				logSvc.saveJobLog(jobExecutor.getJobLog());
 			}
 		}
-		
 		
 		if(CollectionUtils.isEmpty(finishList) == false){
 			for(int i = 0, len = finishList.size(); i < len; i++){

@@ -25,18 +25,20 @@ public class StartJobState implements IState{
 	@Override
 	public void execute() throws OctopusException {
 		List<JobExecutor> todoList =  this.findAndRemoveStartJobsFromWaitingList();
-		if(CollectionUtils.isEmpty(todoList)){
+		if(CollectionUtils.isEmpty(todoList) && CollectionUtils.isEmpty(this.controller.getContext().getWaitingList())){
 			if(CollectionUtils.isEmpty(this.controller.getContext().getExecutingList())){
 				this.controller.getContext().getFlowLog().setStatus("");
 				this.controller.setState(new StopState(this.controller));
 			}
 		}else{
-			for(int i = 0, len = todoList.size(); i < len ; i++){
-				JobExecutor todoExecutor = todoList.get(i);
-				new Thread(todoExecutor).start();
-				this.controller.getContext().getExecutingList().add(todoExecutor);
-				JobLogService logSvc = (JobLogService)SlaverContext.getInstance().getBean("jobLogService");
-				logSvc.saveJobLog(todoExecutor.getJobLog());
+			if(CollectionUtils.isEmpty(todoList) == false){
+				for(int i = 0, len = todoList.size(); i < len ; i++){
+					JobExecutor todoExecutor = todoList.get(i);
+					new Thread(todoExecutor).start();
+					this.controller.getContext().getExecutingList().add(todoExecutor);
+					JobLogService logSvc = (JobLogService)SlaverContext.getInstance().getBean("jobLogService");
+					logSvc.saveJobLog(todoExecutor.getJobLog());
+				}
 			}
 			this.controller.setState(new JudgeRunningJobState(this.controller));
 		}
@@ -91,7 +93,7 @@ public class StartJobState implements IState{
 			JobProperties jobProps = jobExecutor.getJob();
 			if(jobProps.getId().equals(line.getSourceJobId())){
 				if(jobExecutor.getJob().isJudge()){
-					if(jobExecutor.getResult().equals(line.getCondition())){
+					if(jobExecutor.getExitCode() == line.getCondition()){
 						should = true;
 						break;
 					}

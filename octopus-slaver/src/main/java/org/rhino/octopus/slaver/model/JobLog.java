@@ -8,8 +8,6 @@ public class JobLog {
 	
 	private String jobId;
 	
-	private String clsName;
-	
 	private String sysLog;
 	
 	private String errLog;
@@ -38,14 +36,6 @@ public class JobLog {
 
 	public void setJobId(String jobId) {
 		this.jobId = jobId;
-	}
-
-	public String getClsName() {
-		return clsName;
-	}
-
-	public void setClsName(String clsName) {
-		this.clsName = clsName;
 	}
 
 	public String getSysLog() {

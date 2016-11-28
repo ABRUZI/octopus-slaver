@@ -21,26 +21,22 @@ public class FlowDAO {
 		flow.setJobList(jobList);
 		
 		JobProperties firstJob = new JobProperties();
-		firstJob.setClsName("org.rhino.octopus.demo.component.FirstExecJob");
 		firstJob.setId("1");
 		firstJob.setName("起点Job");
 		firstJob.setFatal(false);
 		
 		JobProperties judgetJob = new JobProperties();
-		judgetJob.setClsName("org.rhino.octopus.demo.component.BranchJudgeJob");
 		judgetJob.setId("2");
 		judgetJob.setName("判断Job");
 		judgetJob.setFatal(false);
 		judgetJob.setJudge(true);
 		
 		JobProperties leftJob = new JobProperties();
-		leftJob.setClsName("org.rhino.octopus.demo.component.LeftExecJob");
 		leftJob.setId("3");
 		leftJob.setName("左Job");
 		leftJob.setFatal(false);
 		
 		JobProperties rightJob = new JobProperties();
-		rightJob.setClsName("org.rhino.octopus.demo.component.RightExecJob");
 		rightJob.setId("4");
 		rightJob.setName("右Job");
 		rightJob.setFatal(false);
@@ -61,13 +57,13 @@ public class FlowDAO {
 		line2.setId("b");
 		line2.setSourceJobId("2");
 		line2.setTargetJobId("3");
-		line2.setCondition("aaa");
+		line2.setCondition(1);
 		
 		Line line3 = new Line();
 		line3.setId("c");
 		line3.setSourceJobId("2");
 		line3.setTargetJobId("4");
-		line3.setCondition("bbb");
+		line3.setCondition(0);
 		
 		lineList.add(line1);
 		lineList.add(line2);

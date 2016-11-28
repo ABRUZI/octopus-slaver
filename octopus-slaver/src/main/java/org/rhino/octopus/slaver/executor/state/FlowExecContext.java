@@ -20,15 +20,43 @@ public class FlowExecContext {
 
 	private Flow flow;
 	
+	/**
+	 * 等待执行列表
+	 */
 	private List<JobExecutor> waitingList;
 	
+	/**
+	 * 执行中列表
+	 */
 	private List<JobExecutor> executingList;
 	
+	/**
+	 * 成功列表
+	 */
 	private List<JobExecutor> successList;
 	
+	/**
+	 * 失败列表
+	 */
 	private List<JobExecutor> failedList;
 	
+	/**
+	 * 全部列表
+	 */
+	private List<JobExecutor> allList;
+	
+	
+	/**
+	 * 无需执行列表
+	 */
+	private List<JobExecutor> noNeedList;
+	
+	/**
+	 * 关联关系列表
+	 */
 	private List<Line> lineList;
+	
+	
 	
 	public FlowExecContext(Flow flow){
 		this.flow = flow;
@@ -41,6 +69,8 @@ public class FlowExecContext {
 		this.executingList = new ArrayList<JobExecutor>();
 		this.successList = new ArrayList<JobExecutor>();
 		this.failedList = new ArrayList<JobExecutor>();
+		this.allList = new ArrayList<JobExecutor>();
+		this.noNeedList = new ArrayList<JobExecutor>();
 		this.lineList = new ArrayList<Line>();
 	}
 	
@@ -81,5 +111,15 @@ public class FlowExecContext {
 
 	public void setFlowLog(FlowLog flowLog) {
 		this.flowLog = flowLog;
+	}
+
+
+	public List<JobExecutor> getAllList() {
+		return allList;
+	}
+
+
+	public List<JobExecutor> getNoNeedList() {
+		return noNeedList;
 	}
 }

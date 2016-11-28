@@ -1,34 +1,42 @@
 package org.rhino.octopus.slaver.executor;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 
 import org.rhino.octopus.base.constants.JobRuntimeStatus;
 import org.rhino.octopus.base.exception.OctopusException;
 import org.rhino.octopus.base.model.job.JobProperties;
-import org.rhino.octopus.slaver.executor.constants.ExecutorConstants;
+import org.rhino.octopus.slaver.executor.util.ShellFileUtil;
 import org.rhino.octopus.slaver.model.JobLog;
 
-public abstract class JobExecutor implements Runnable {
+public class JobExecutor implements Runnable {
 
 	private static final int EXIT_SUCCESS  = 0;
 	
-	protected JobProperties jobProp;
-
-	private String flowParams;
+	private static final String POINT = ".";
 	
-	private String result;
+	private static final String SPACE = " ";
+	
+	protected JobProperties jobProp;
 	
 	private volatile JobLog jobLog;
+	
+	private Process process;
+	
+	private boolean halted;
+	
+	private int exitCode;
+	
+	private String shellFileFullName;
 
-	public JobExecutor(JobProperties jobProp, JobLog jobLog, String flowParams) {
+	public JobExecutor(JobProperties jobProp, JobLog jobLog)throws OctopusException {
 		this.jobProp = jobProp;
-		this.flowParams = flowParams;
 		this.jobLog = jobLog;
+		this.halted = false;
+		this.exitCode = Integer.MIN_VALUE;
+		this.shellFileFullName = ShellFileUtil.createShellFile(jobProp.getFileName(), jobProp.getFile());
 	}
 
 	@Override
@@ -36,30 +44,32 @@ public abstract class JobExecutor implements Runnable {
 		this.jobLog.setStatusCode(JobRuntimeStatus.RUNNING.getCode());
 		Runtime runtime = Runtime.getRuntime();
 		
-		BufferedWriter writer = null;
 		BufferedReader stdReader = null;
 		BufferedReader errReader = null;
 		try {
-			String command = this.getExecCommand();
-			Process process = runtime.exec(command);
-			writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
-			writer.write(this.flowParams);
-			writer.close();
+			synchronized(this){
+				if(this.halted == true){
+					return;
+				}
+				String command = this.getExecCommand();
+				this.process = runtime.exec(command);
+			}
 			stdReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 			errReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-			int code = process.waitFor();
+			this.exitCode = process.waitFor();
 			this.jobLog.setErrLog(readLog(errReader));
 			this.jobLog.setSysLog(this.readLog(stdReader));
-			this.result = this.createResult();
-			if(code == EXIT_SUCCESS){
+			if(this.exitCode >= EXIT_SUCCESS){
 				this.jobLog.setStatusCode(JobRuntimeStatus.SUCCESS.getCode());
 			}else{
 				this.jobLog.setStatusCode(JobRuntimeStatus.FAIL.getCode());
 			}
 		} catch (Exception e) {
+			this.exitCode = -1;
 			this.jobLog.setStatusCode(JobRuntimeStatus.FAIL.getCode());
 			e.printStackTrace();
 		} finally {
+			ShellFileUtil.deleteShellFile(this.shellFileFullName);
 			if(stdReader != null){
 				try {stdReader.close();} catch (IOException e) {e.printStackTrace();}
 			}
@@ -71,6 +81,9 @@ public abstract class JobExecutor implements Runnable {
 	}
 	
 	
+	public int getExitCode(){
+		return this.exitCode;
+	}
 
 	public JobLog getJobLog() {
 		return jobLog;
@@ -79,39 +92,23 @@ public abstract class JobExecutor implements Runnable {
 	public JobProperties getJob() {
 		return this.jobProp;
 	}
-
-	public String getResult() {
-		return result;
-	}
 	
-	
-	protected abstract String getExecCommand() throws OctopusException;
-	
-	
-	
-	private String createResult(){
-		
-		String res = null;
-		BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(this.jobLog.getSysLog().getBytes())));
-		String line = null;
-		try {
-			String key = this.createResultKey();
-			while((line = reader.readLine()) != null){
-				if(line.startsWith(key)){
-					res = line.split(ExecutorConstants.EQUALS)[1];
-					break;
-				}
+	public void shutdown() {
+		synchronized(this){
+			this.halted = true;
+			if(this.process != null){
+				this.process.destroy();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+			ShellFileUtil.deleteShellFile(this.shellFileFullName);
 		}
-		return res;
 	}
 	
-	private String createResultKey(){
-		StringBuilder builder = new StringBuilder();
-		builder.append(ExecutorConstants.LOG_PREFIX);
-		builder.append(this.jobProp.getClsName());
+	private String getExecCommand(){
+		StringBuilder builder = new StringBuilder(POINT + File.separatorChar + shellFileFullName);
+		for(int i = 0, len = this.jobProp.getParamList().size(); i < len; i++){
+			builder.append(SPACE);
+			builder.append(this.jobProp.getParamList().get(i));
+		}
 		return builder.toString();
 	}
 	
@@ -124,6 +121,5 @@ public abstract class JobExecutor implements Runnable {
 		}
 		return builder.toString();
 	}
-	
 	
 }
